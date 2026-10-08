@@ -21,5 +21,5 @@ Press Ctrl+C to stop. Readings are saved to sysmon_log.csv every 5 seconds.
 
 - [x] v1: live display
 - [x] v2: CSV logging
-- [ ] v3: threshold alerts and command-line options
+- [x] v3: threshold alerts and command-line options
 - [ ] v4: run as a systemd service
