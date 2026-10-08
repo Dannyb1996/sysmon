@@ -13,7 +13,7 @@ RESET = "\033[0m"
 def parse_args():
     p = argparse.ArgumentParser(description="Lightweight terminal system monitor.")
     p.add_argument("--interval", type=float, default=1.0,
-                   help="screen refresh in seconds (default 1)")
+                   help="seconds between readings (default 1)")
     p.add_argument("--log-every", type=float, default=5.0,
                    help="seconds between log rows (default 5)")
     p.add_argument("--log-file", default="sysmon_log.csv",
@@ -25,6 +25,8 @@ def parse_args():
                    help="RAM alert threshold in %% (default 90)")
     p.add_argument("--disk-alert", type=float, default=90,
                    help="disk alert threshold in %% (default 90)")
+    p.add_argument("--headless", action="store_true",
+                   help="no live screen; log, and print only alert changes (for services)")
     return p.parse_args()
 
 
@@ -41,6 +43,7 @@ def top_processes(n=5):
 
 
 def log_row(path, cpu, mem, disk, batt, alerts):
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     new_file = not os.path.exists(path)
     with open(path, "a", newline="") as f:
         writer = csv.writer(f)
@@ -60,6 +63,9 @@ def main():
     for p in psutil.process_iter():          # prime per-process CPU counters
         p.cpu_percent(None)
     last_log = 0.0
+    last_alerts = []
+    if args.headless:
+        print("sysmon started (headless)", flush=True)
     try:
         while True:
             cpu = psutil.cpu_percent(interval=args.interval)
@@ -79,8 +85,19 @@ def main():
                 log_row(args.log_file, cpu, mem, disk, batt, alerts)
                 last_log = time.time()
 
+            if args.headless:
+                if alerts != last_alerts:
+                    stamp = datetime.now().isoformat(timespec="seconds")
+                    if alerts:
+                        print(f"{stamp} ALERT: {', '.join(alerts)} above threshold "
+                              f"(cpu={cpu}% ram={mem.percent}% disk={disk.percent}%)", flush=True)
+                    else:
+                        print(f"{stamp} OK: back below thresholds", flush=True)
+                    last_alerts = alerts
+                continue
+
             print("\033[H\033[J", end="")    # clear screen
-            print("=== SYSMON v3 ===")
+            print("=== SYSMON v4 ===")
             print(f"CPU  {bar(cpu, args.cpu_alert)} {cpu:5.1f}%")
             print(f"RAM  {bar(mem.percent, args.ram_alert)} {mem.percent:5.1f}%  ({mem.used/1e9:.1f}/{mem.total/1e9:.1f} GB)")
             print(f"DISK {bar(disk.percent, args.disk_alert)} {disk.percent:5.1f}%  ({disk.used/1e9:.0f}/{disk.total/1e9:.0f} GB)")

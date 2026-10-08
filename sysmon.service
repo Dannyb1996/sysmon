@@ -1,0 +1,11 @@
+[Unit]
+Description=sysmon system monitor logger
+
+[Service]
+ExecStart=%h/projects/sysmon/.venv/bin/python %h/projects/sysmon/sysmon.py --headless --interval 5 --log-every 30 --log-file %h/.local/share/sysmon/sysmon_log.csv
+Restart=on-failure
+RestartSec=5
+Nice=10
+
+[Install]
+WantedBy=default.target

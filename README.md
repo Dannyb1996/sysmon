@@ -22,4 +22,17 @@ Press Ctrl+C to stop. Readings are saved to sysmon_log.csv every 5 seconds.
 - [x] v1: live display
 - [x] v2: CSV logging
 - [x] v3: threshold alerts and command-line options
-- [ ] v4: run as a systemd service
+- [x] v4: run as a systemd service
+
+## Run as a background service (systemd user service)
+
+    mkdir -p ~/.config/systemd/user ~/.local/share/sysmon
+    cp sysmon.service ~/.config/systemd/user/
+    systemctl --user daemon-reload
+    systemctl --user enable --now sysmon.service
+
+The service uses the project's virtualenv and expects the repo at ~/projects/sysmon.
+It logs to ~/.local/share/sysmon/sysmon_log.csv every 30 seconds and writes
+to the journal only when an alert changes state:
+
+    journalctl --user -u sysmon.service
